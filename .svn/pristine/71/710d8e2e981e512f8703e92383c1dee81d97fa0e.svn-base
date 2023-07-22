@@ -1,0 +1,42 @@
+APP_ENV  : local
+API_PORT : 6789
+
+ACCESS_SECRET  :g0-r4ls-wms-s3rvic3s-ch4nn3l
+REFRESH_SECRET : g0-r4ls-wms-s3rvic3s-ch4nn3l-r3fr3sh
+
+#Api WMS
+URI_API_WMS        : http://127.0.0.1
+PORT_API_WMS       : 6969
+TOKEN_API_WMS      : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJheXV3aWRpYSIsImxldmVsIjoiYXBwbGljYXRpb24ifQ.epW14wjlaHbN93zHVgXmQMpLUftcX4WNjSjICKbQ9LE
+
+TOKEN_BOT_TELEGRAM : 1934618889:AAHWoxvbQ-Cf5gWl7Sh3fLNTSmsVe7sElJo
+API_TELEGRAM       : https://api.telegram.org/bot
+
+#SHOPEE
+URI_API_SHOPEE              : https://partner.test-stable.shopeemobile.com
+PARTNER_ID_SHOPEE           : 1003569
+PARTNER_KEY_SHOPEE          : 8f0b566912e0b7262489d2b7240949fe50226bc5821b3c208a2e8046620fd05b
+SHOP_ID_SHOPEE              : 25815
+PAGE_SIZE_ORDER             : 100
+
+#DB Postgres wms
+DB_DRIVER_WMS   : postgres
+DB_USERNAME_WMS : wmsusr
+DB_PASSWORD_WMS : wms@usr2021
+DB_PORT_WMS     : 8191
+DB_HOST_WMS     : 172.16.1.13
+DB_NAME_WMS     : dbwms
+
+#DB Oracle maris
+DB_DRIVER_MARIS       : godror
+DB_USERNAME_MARIS     : fashion2016
+DB_PASSWORD_MARIS     : f4shionRals
+DB_PORT_MARIS         : 1521
+DB_HOST_MARIS         : 172.16.1.234
+DB_SERVICE_NAME_MARIS : pusat
+
+#Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+

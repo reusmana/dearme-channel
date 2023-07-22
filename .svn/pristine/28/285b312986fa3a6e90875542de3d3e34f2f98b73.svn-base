@@ -1,0 +1,1011 @@
+package tokenRepository
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/rals/dearme-channel/config"
+	"github.com/rals/dearme-channel/enums"
+	"github.com/rals/dearme-channel/models"
+)
+
+func GetDataToken(param string) (models.TableApiChannel, error) {
+	var obj models.TableApiChannel
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_api_channel := enums.SCHEMA_PUBLIC + "wms_api_channel"
+
+	err := db.Table(wms_api_channel).
+		Where(wms_api_channel+".id =? ", param).
+		Order(wms_api_channel + ".created_date desc").
+		First(&obj).Error
+	return obj, err
+}
+
+func FindSalesOrder(param string) (models.TableSalesOrder, error) {
+	var obj models.TableSalesOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_api_channel := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	err := db.Table(wms_api_channel).
+		Where(wms_api_channel+".no_order =? ", param).
+		First(&obj).Error
+	return obj, err
+}
+func FindSalesOrderArray(param string) ([]models.TableSalesOrder, error) {
+	var obj []models.TableSalesOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_api_channel := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	err := db.Table(wms_api_channel).
+		Where(wms_api_channel+".no_order =? ", param).
+		Find(&obj).Error
+	return obj, err
+}
+
+func FindSalesOrderParam(param string, param2 string) (models.TableSalesOrder, error) {
+	var obj models.TableSalesOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_api_channel := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	err := db.Table(wms_api_channel).
+		Where(wms_api_channel+".no_order =? and "+wms_api_channel+".status_process_order = ? ", param, param2).
+		First(&obj).Error
+	return obj, err
+}
+
+func FindSalesOrderBySku(param, param2, param3 string) (models.TableSalesOrder, error) {
+	var obj models.TableSalesOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_api_channel := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	err := db.Table(wms_api_channel).
+		Where(wms_api_channel+".no_order =? and "+wms_api_channel+".status_process_order = ? and "+wms_api_channel+".sku_no = ? ", param, param2, param3).
+		First(&obj).Error
+	return obj, err
+}
+
+func FindChannel(param string) (models.TableChannel, error) {
+	var obj models.TableChannel
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_api_channel := enums.SCHEMA_PUBLIC + "wms_channel"
+
+	err := db.Table(wms_api_channel).
+		Where(wms_api_channel+".channel_name =? ", param).
+		First(&obj).Error
+	return obj, err
+}
+
+func SaveTokenShopee(obj models.TableApiChannel) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	if err := db.Table(enums.SCHEMA_PUBLIC + "wms_api_channel").Create(&obj).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func SaveChannelError(obj models.TableLogErrChannel) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	if err := db.Table(enums.SCHEMA_PUBLIC + "log_error_api_channel").Create(&obj).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func SaveSalesOrder(objDetail []models.TableSalesOrder, objSalesOrderTotalQty models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	for _, objDetail := range objDetail {
+		if err := db.Table(enums.SCHEMA_PUBLIC + "wms_sales_order").Create(&objDetail).Error; err != nil {
+			db.Rollback()
+			return err
+		}
+	}
+
+	//update totalqty
+	if err := db.Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where("no_order = ?", objSalesOrderTotalQty.NoOrder).Update(&objSalesOrderTotalQty).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateKurir(objKurir models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	//update totalqty
+	if err := db.Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where("no_order = ?", objKurir.NoOrder).Update(&objKurir).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateKurirNew(objKurir models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	//update totalqty
+	if err := db.Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where("no_order = ? and created_by = ?", objKurir.NoOrder, objKurir.CreatedBy).Update(&objKurir).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateSalesOrderCanc(objCancSalesOrder models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	//update status process order
+	if err := db.Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where("no_order = ? and created_by = ? ", objCancSalesOrder.NoOrder, objCancSalesOrder.CreatedBy).Update(&objCancSalesOrder).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	//jika Cancel
+	if objCancSalesOrder.StatusProcessOrder == "3" {
+		//cari wms booking by no order
+		wms_sales_booking := enums.SCHEMA_PUBLIC + "wms_sales_booking"
+		wms_product_uid := enums.SCHEMA_PUBLIC + "wms_product_uid"
+
+		var objBooking []models.TableSalesBooking
+		db.Table(wms_sales_booking).
+			Where(wms_sales_booking+".no_order = ? ", objCancSalesOrder.NoOrder).
+			Find(&objBooking)
+
+		for _, objBooking := range objBooking {
+			var objProductUid models.UpdateProductByUid
+			var objBookDel models.TableSalesBooking
+			objProductUid.Uid = objBooking.Uid
+			objProductUid.UuidStatus = "05e2dd36-2e08-daa0-43f4-f1c783683818" //AVLB
+			objBookDel.UuidSalesBooking = objBooking.UuidSalesBooking
+
+			fmt.Println(" UuidSalesBooking " + objBooking.UuidSalesBooking)
+			fmt.Println(" NoOrder " + objCancSalesOrder.NoOrder)
+			fmt.Println(" UID " + objProductUid.Uid)
+			fmt.Println(" UuidStatus " + objProductUid.UuidStatus)
+
+			//cari jika masih rsrv/pick
+			var objProductUidCari models.UpdateProductByUid
+			db.Table(wms_product_uid).
+				Where(wms_product_uid+".uid = ? ", objProductUid.Uid).
+				First(&objProductUidCari)
+
+			if objProductUidCari.UuidStatus == "214d2796-ea37-de04-78a1-728d9d9ab58e" ||
+				objProductUidCari.UuidStatus == "eff09170-9310-42d2-8c5d-a1f510f4a809" {
+
+				fmt.Println(" UID TIDAK RSRV/PICK")
+				if err := db.Table(wms_product_uid).
+					Where(wms_product_uid+".uid = ? ", objProductUid.Uid).
+					Update(&objProductUid).Error; err != nil {
+					db.Rollback()
+					return err
+				}
+
+				if err := db.Table(wms_sales_booking).
+					Where(wms_sales_booking+".uuid_sales_booking = ? ", objBookDel.UuidSalesBooking).
+					Delete(&objBookDel).Error; err != nil {
+					db.Rollback()
+					return err
+				}
+
+			}
+
+			// if err := db.Table(wms_product_uid).
+			// 	Where(wms_product_uid+".uid = ? ", objProductUid.Uid).
+			// 	Update(&objProductUid).Error; err != nil {
+			// 	db.Rollback()
+			// 	return err
+			// }
+
+			// if err := db.Table(wms_sales_booking).
+			// 	Where(wms_sales_booking+".uuid_sales_booking = ? ", objBookDel.UuidSalesBooking).
+			// 	Delete(&objBookDel).Error; err != nil {
+			// 	db.Rollback()
+			// 	return err
+			// }
+		}
+
+	} //end jika status 3 Cancel
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateSalesOrderCancNew(noorder string, objCancSalesOrder models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	//update status process order
+	if objCancSalesOrder.UuidSalesOrder != "" {
+		if err := db.Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where(" no_order = ? and created_by = ? and uuid_sales_order = ?", noorder, objCancSalesOrder.CreatedBy, objCancSalesOrder.UuidSalesOrder).Update(&objCancSalesOrder).Error; err != nil {
+			db.Rollback()
+			return err
+		}
+	} else {
+		if err := db.Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where("no_order = ? and created_by = ? ", objCancSalesOrder.NoOrder, objCancSalesOrder.CreatedBy).Update(&objCancSalesOrder).Error; err != nil {
+			db.Rollback()
+			return err
+		}
+	}
+
+	//jika Cancel
+	if objCancSalesOrder.StatusProcessOrder == "3" {
+		//cari wms booking by no order
+		wms_sales_booking := enums.SCHEMA_PUBLIC + "wms_sales_booking"
+		wms_product_uid := enums.SCHEMA_PUBLIC + "wms_product_uid"
+
+		var objBooking []models.TableSalesBooking
+		// db.Table(wms_sales_booking).
+		// 	Where(wms_sales_booking+".no_order = ? ", objCancSalesOrder.NoOrder).
+		// 	Find(&objBooking)
+
+		if objCancSalesOrder.UuidSalesOrder != "" {
+			db.Table(wms_sales_booking).
+				Where(wms_sales_booking+".no_order = ? and "+wms_sales_booking+".sku_no = ? ", noorder, objCancSalesOrder.SkuNo).
+				Find(&objBooking)
+		} else {
+			db.Table(wms_sales_booking).
+				Where(wms_sales_booking+".no_order = ? ", objCancSalesOrder.NoOrder).
+				Find(&objBooking)
+		}
+
+		for _, objBooking := range objBooking {
+			var objProductUid models.UpdateProductByUid
+			var objBookDel models.TableSalesBooking
+			objProductUid.Uid = objBooking.Uid
+			objProductUid.UuidStatus = "05e2dd36-2e08-daa0-43f4-f1c783683818" //AVLB
+			objBookDel.UuidSalesBooking = objBooking.UuidSalesBooking
+
+			fmt.Println(" UuidSalesBooking " + objBooking.UuidSalesBooking)
+			fmt.Println(" NoOrder " + objCancSalesOrder.NoOrder)
+			fmt.Println(" UID " + objProductUid.Uid)
+			fmt.Println(" UuidStatus " + objProductUid.UuidStatus)
+
+			//cari jika masih rsrv/pick
+			var objProductUidCari models.UpdateProductByUid
+			db.Table(wms_product_uid).
+				Where(wms_product_uid+".uid = ? ", objProductUid.Uid).
+				First(&objProductUidCari)
+
+			if objProductUidCari.UuidStatus == "214d2796-ea37-de04-78a1-728d9d9ab58e" ||
+				objProductUidCari.UuidStatus == "eff09170-9310-42d2-8c5d-a1f510f4a809" {
+
+				//fmt.Println(" UID TIDAK RSRV/PICK")
+				if err := db.Table(wms_product_uid).
+					Where(wms_product_uid+".uid = ? ", objProductUid.Uid).
+					Update(&objProductUid).Error; err != nil {
+					db.Rollback()
+					return err
+				}
+
+				if err := db.Table(wms_sales_booking).
+					Where(wms_sales_booking+".uuid_sales_booking = ? ", objBookDel.UuidSalesBooking).
+					Delete(&objBookDel).Error; err != nil {
+					db.Rollback()
+					return err
+				}
+
+			}
+
+			// if err := db.Table(wms_product_uid).
+			// 	Where(wms_product_uid+".uid = ? ", objProductUid.Uid).
+			// 	Update(&objProductUid).Error; err != nil {
+			// 	db.Rollback()
+			// 	return err
+			// }
+
+			// if err := db.Table(wms_sales_booking).
+			// 	Where(wms_sales_booking+".uuid_sales_booking = ? ", objBookDel.UuidSalesBooking).
+			// 	Delete(&objBookDel).Error; err != nil {
+			// 	db.Rollback()
+			// 	return err
+			// }
+		}
+
+	} //end jika status 3 Cancel
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateSalesOrderAmount(objAmoutntSales models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	if err := db.Debug().Table(enums.SCHEMA_PUBLIC+"wms_sales_order").Where("no_order = ? and created_by = ? and sku_no = ? ", objAmoutntSales.NoOrder, objAmoutntSales.CreatedBy, objAmoutntSales.SkuNo).Update(&objAmoutntSales).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+
+}
+
+func CariOrderByResi(param string) ([]models.TableSalesOrder, error) {
+	var obj []models.TableSalesOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sales_order := enums.SCHEMA_PUBLIC + "wms_sales_order"
+	wms_channel := enums.SCHEMA_PUBLIC + "wms_channel"
+
+	err := db.Table(wms_sales_order).
+		Select(wms_sales_order+".no_order,"+wms_sales_order+".no_resi,"+wms_sales_order+".status_process_order,"+wms_sales_order+".created_date").
+		Joins("JOIN "+wms_channel+" ON "+wms_channel+".channel_code = "+wms_sales_order+".channel_code ").
+		Where(wms_sales_order+".status_process_order ='1' and "+wms_sales_order+".no_resi != ''  and  "+wms_sales_order+".payout_date is null and upper("+wms_channel+".channel_name) = ? ", param).
+		Group(wms_sales_order + ".no_order," + wms_sales_order + ".no_resi," + wms_sales_order + ".status_process_order," + wms_sales_order + ".created_date").
+		Order(wms_sales_order + ".created_date desc").
+		Find(&obj).Error
+	return obj, err
+}
+
+func SaveSkuMapping(objMapping []models.TableSkuMapping) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	for _, objMapping := range objMapping {
+		if err := db.Table(enums.SCHEMA_PUBLIC + "wms_sku_mapping").Create(&objMapping).Error; err != nil {
+			db.Rollback()
+			return err
+		}
+	}
+
+	result := db.Commit().Error
+	return result
+}
+func UpdateSaveSkuMapping(objMapping models.TableSkuMapping) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	if err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".uuid_sku_mapping = ? ", objMapping.UuidSkuMapping).
+		Update(&objMapping).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateStatusSkuMappingNull(objMapping models.TableSkuMapping) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	if err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".id_sku_parent = ? and "+wms_sku_mapping+".channel_code = ? ", objMapping.IdSkuParent, objMapping.ChannelCode).
+		Update(&objMapping).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func CariSkuMapping(param string, param2 string) (models.TableSkuMapping, error) {
+	var obj models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".sku_no = ? and "+wms_sku_mapping+".channel_code = ? ", param, param2).
+		Order(wms_sku_mapping + ".created_date").
+		First(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingActive(param string, param2 string) (models.TableSkuMapping, error) {
+	var obj models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".sku_no = ? and "+wms_sku_mapping+".channel_code = ? and "+wms_sku_mapping+".uuid_status = ? ", param, param2, "3936a00a-e321-f5ff-33b5-2dfb8d68ba45").
+		Order(wms_sku_mapping + ".created_date").
+		First(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingParentChild1(IdParent string, IdChild1 string, ChannelCode string) (models.TableSkuMapping, error) {
+	var obj models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	wheres := ""
+	if IdChild1 != "" {
+		wheres = " and id_sku_child1 = '" + IdChild1 + "' "
+	}
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".channel_code = ? and "+wms_sku_mapping+".id_sku_parent = ? "+wheres+" and "+wms_sku_mapping+".uuid_status = ? ", ChannelCode, IdParent, "3936a00a-e321-f5ff-33b5-2dfb8d68ba45").
+		Order(wms_sku_mapping + ".created_date").
+		First(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingByModel(param string, param2 string, param3 string) (models.TableSkuMapping, error) {
+	var obj models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".sku_no = ? and "+wms_sku_mapping+".channel_code = ? and "+wms_sku_mapping+".id_sku_child1 = ? ", param, param2, param3).
+		Order(wms_sku_mapping + ".created_date").
+		First(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingByParent(param string, param2 string, param3 string) (models.TableSkuMapping, error) {
+	var obj models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".sku_no = ? and "+wms_sku_mapping+".channel_code = ? and "+wms_sku_mapping+".id_sku_parent = ? ", param, param2, param3).
+		Order(wms_sku_mapping + ".created_date").
+		First(&obj).Error
+	return obj, err
+}
+
+func CekSkuMappingChild(param string, param2 string, param3 string) ([]models.TableSkuMapping, error) {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".sku_no = ? and "+wms_sku_mapping+".channel_code = ? and "+wms_sku_mapping+".id_sku_parent = ? and length("+wms_sku_mapping+".id_sku_child1)<2 and "+wms_sku_mapping+".uuid_status = ? ", param, param2, param3, "3936a00a-e321-f5ff-33b5-2dfb8d68ba45").
+		Find(&obj).Error
+	return obj, err
+}
+
+func SearchProductNull(param string) []models.TableSkuMapping {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	where := wms_sku_mapping + ".uuid_status is null and " + wms_sku_mapping + ".channel_code = '" + param + "' "
+
+	db.Table(wms_sku_mapping).
+		Where(where).
+		Find(&obj)
+	return obj
+
+}
+
+func CariSkuWMS(param string) (models.TableSkuMapping, error) {
+	var obj models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	// wms_onhand := enums.SCHEMA_PUBLIC + "wms_onhand"
+
+	// err := db.Table(wms_onhand).
+	// 	Select("left("+wms_onhand+".uid,8) as sku_no").
+	// 	Where("left("+wms_onhand+".uid,8) = ? ", param).
+	// 	First(&obj).Error
+
+	wms_product_sku := enums.SCHEMA_PUBLIC + "wms_product_sku"
+
+	err := db.Table(wms_product_sku).
+		Select(wms_product_sku+".sku_no").
+		Where(wms_product_sku+".sku_no = ? ", param).
+		First(&obj).Error
+	return obj, err
+}
+
+func CariSkuWMSAll() ([]models.TableSkuMapping, error) {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	// wms_onhand := enums.SCHEMA_PUBLIC + "wms_onhand"
+
+	// err := db.Table(wms_onhand).
+	// 	Select("left("+wms_onhand+".uid,8) as sku_no").
+	// 	Where("left("+wms_onhand+".uid,8) = ? ", param).
+	// 	First(&obj).Error
+
+	wms_product_sku := enums.SCHEMA_PUBLIC + "wms_product_sku"
+
+	err := db.Table(wms_product_sku).
+		Select(wms_product_sku + ".sku_no").
+		Find(&obj).Error
+	return obj, err
+}
+
+func CariSkuWMSStock() ([]models.TableSkuMapping, error) {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	// wms_onhand := enums.SCHEMA_PUBLIC + "wms_onhand"
+
+	// err := db.Table(wms_onhand).
+	// 	Select("left("+wms_onhand+".uid,8) as sku_no").
+	// 	Where("left("+wms_onhand+".uid,8) = ? ", param).
+	// 	First(&obj).Error
+
+	wms_sku_stock := enums.SCHEMA_PUBLIC + "wms_sku_stock"
+
+	err := db.Table(wms_sku_stock).
+		Select(wms_sku_stock + ".sku_no").
+		Find(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingObj(param string) ([]models.TableSkuMapping, error) {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".channel_code = ? ", param).
+		Order(wms_sku_mapping + ".sku_no," + wms_sku_mapping + ".created_date").
+		Find(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingObjGroup(param string) ([]models.TableSkuMapping, error) {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Select(wms_sku_mapping+".sku_no ").
+		Where(wms_sku_mapping+".channel_code = ? ", param).
+		Group(wms_sku_mapping + ".sku_no").
+		Order(wms_sku_mapping + ".sku_no").
+		Find(&obj).Error
+	return obj, err
+}
+
+func CariSkuMappingGroup() ([]models.TableSkuMapping, error) {
+	var obj []models.TableSkuMapping
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	err := db.Table(wms_sku_mapping).
+		Select(wms_sku_mapping + ".sku_no ").
+		Group(wms_sku_mapping + ".sku_no").
+		Order(wms_sku_mapping + ".sku_no").
+		Find(&obj).Error
+	return obj, err
+}
+
+func CariUidAvlb(param string) ([]models.DetailOrderPraPicking, error) {
+	var obj []models.DetailOrderPraPicking
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_putway := enums.SCHEMA_PUBLIC + "wms_putway"
+	wms_product_racking := enums.SCHEMA_PUBLIC + "wms_product_racking"
+	wms_product_uid := enums.SCHEMA_PUBLIC + "wms_product_uid"
+	wms_racking := enums.SCHEMA_PUBLIC + "wms_racking"
+	wms_status := enums.SCHEMA_PUBLIC + "wms_status"
+
+	err := db.Table(wms_putway).
+		Select(wms_product_uid+".uid,"+wms_racking+".racking_no ").
+		Joins("JOIN "+wms_product_racking+" ON "+wms_product_racking+".uuid_product_racking = "+wms_putway+".uuid_product_racking ").
+		Joins("JOIN "+wms_product_uid+" ON "+wms_product_uid+".uuid_product_uid = "+wms_product_racking+".uuid_product_uid ").
+		Joins("JOIN "+wms_racking+" ON "+wms_racking+".uuid_racking_no = "+wms_putway+".uuid_racking_no ").
+		Where(wms_product_uid+".uuid_status in ( select ws.uuid_status from "+wms_status+" ws where status_code='AVLB') and "+wms_putway+".uuid_status in ( select ws.uuid_status from "+wms_status+" ws where status_code='PTWY') and "+wms_product_uid+".sku_no = ? ", param).
+		Find(&obj).Error
+	return obj, err
+}
+
+func CariUidSalesOrder(param string, param1 string) (int64, error) {
+	type Totals struct {
+		Total string `json:"total"`
+	}
+
+	var objTotal Totals
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sales_order := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	err := db.Table(wms_sales_order).
+		Select("sum("+wms_sales_order+".qty) as total ").
+		Where(wms_sales_order+".channel_code = ? and "+wms_sales_order+".status_process_order = ? and "+wms_sales_order+".sku_no = ?  ", param1, "0", param).
+		First(&objTotal).Error
+
+	totals := objTotal.Total
+	totalsx := 0
+	if totals != "" {
+		totalsx, _ = strconv.Atoi(totals)
+	}
+
+	return int64(totalsx), err
+}
+
+func CariNoOrderStatus(param string, param1 string) ([]models.GetOrder, error) {
+
+	var objTotal []models.GetOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sales_order := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	err := db.Table(wms_sales_order).
+		Select(wms_sales_order+".no_order ").
+		Where(wms_sales_order+".channel_code = ? and "+wms_sales_order+".status_process_order = ? and "+wms_sales_order+".sku_no = ?  ", param1, "0", param).
+		Find(&objTotal).Error
+
+	return objTotal, err
+}
+
+func CariBooking(param string, param1 string) int64 {
+
+	type Totals struct {
+		Total string `json:"total"`
+	}
+
+	var objTotal Totals
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_sales_booking := enums.SCHEMA_PUBLIC + "wms_sales_booking"
+
+	db.Table(wms_sales_booking).
+		Select(" count(0) as total ").
+		Where(wms_sales_booking+".no_order = ? and left("+wms_sales_booking+".uid,8) = ?   ", param, param1).
+		First(&objTotal)
+
+	totals := objTotal.Total
+	totalsx := 0
+	if totals != "" {
+		totalsx, _ = strconv.Atoi(totals)
+	}
+
+	return int64(totalsx)
+
+}
+
+func CariBufferStock(param string) models.TableBufferStock {
+	var obj models.TableBufferStock
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_buffer_stock := enums.SCHEMA_PUBLIC + "wms_buffer_stock"
+
+	db.Table(wms_buffer_stock).
+		Where(wms_buffer_stock+".sku_no = ?", param).
+		First(&obj)
+	return obj
+}
+
+func SaveStockAPI(obj models.TableLogStock) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	log_stock_api := enums.SCHEMA_PUBLIC + "log_stock_api"
+
+	if err := db.Table(log_stock_api).
+		Create(&obj).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+
+}
+
+func SaveOrderAPI(obj models.TableLogOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	log_order_api := enums.SCHEMA_PUBLIC + "log_order_api"
+
+	if err := db.Table(log_order_api).
+		Create(&obj).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+
+}
+
+func CariOrderLogAPI(param, param1 string) models.TableLogOrder {
+	var obj models.TableLogOrder
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	log_order_api := enums.SCHEMA_PUBLIC + "log_order_api"
+
+	db.Table(log_order_api).
+		Where("channel_code = ? and orderid = ? ", param, param1).
+		First(&obj)
+
+	return obj
+
+}
+
+func DeleteSalesOrder(objSalesOrder models.TableSalesOrder) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	wms_sales_order := enums.SCHEMA_PUBLIC + "wms_sales_order"
+
+	if err := db.Table(wms_sales_order).
+		Where(wms_sales_order+".no_order = ? ", objSalesOrder.NoOrder).
+		Delete(&objSalesOrder).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func ChangeSkuChannelWMS(channel string, noorder string, skuorigin string) []models.TableChangeSku {
+
+	var obj []models.TableChangeSku
+
+	db := config.ConnectionPg()
+	db.Exec(`set search_path='public'`)
+	wms_channel_change_sku := enums.SCHEMA_PUBLIC + "wms_channel_change_sku"
+
+	db.Table(wms_channel_change_sku).
+		Where(wms_channel_change_sku+".channel_code = ? and "+wms_channel_change_sku+".no_order = ? and "+wms_channel_change_sku+".sku_origin = ? ", channel, noorder, skuorigin).
+		Find(&obj)
+
+	return obj
+}
+
+func SaveUploadImage(objImage models.TableUploadImageChannel) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	wms_upload_image_channel := enums.SCHEMA_PUBLIC + "wms_upload_image_channel"
+	if err := db.Table(wms_upload_image_channel).
+		Where(wms_upload_image_channel+".name_file = ? ", objImage.NameFile).
+		Delete(&objImage).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	if err := db.Table(enums.SCHEMA_PUBLIC + "wms_upload_image_channel").Create(&objImage).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}
+
+func UpdateSkuMappingByChannelSKu(objMapping models.TableSkuMapping) error {
+	tx := config.ConnectionPg()
+
+	db := tx.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			db.Rollback()
+		}
+	}()
+
+	if err := db.Error; err != nil {
+		return err
+	}
+
+	wms_sku_mapping := enums.SCHEMA_PUBLIC + "wms_sku_mapping"
+
+	if err := db.Table(wms_sku_mapping).
+		Where(wms_sku_mapping+".sku_no = ? and "+wms_sku_mapping+".channel_code = ? ", objMapping.SkuNo, objMapping.ChannelCode).
+		Update(&objMapping).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	result := db.Commit().Error
+	return result
+}

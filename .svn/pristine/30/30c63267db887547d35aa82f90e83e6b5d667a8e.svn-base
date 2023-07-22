@@ -1,0 +1,356 @@
+package routes
+
+import (
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rals/dearme-channel/controllers/authController"
+	"github.com/rals/dearme-channel/controllers/blibliController"
+	"github.com/rals/dearme-channel/controllers/jdidController"
+
+	"github.com/rals/dearme-channel/controllers/bukalapakController"
+	"github.com/rals/dearme-channel/controllers/lazadaController"
+	"github.com/rals/dearme-channel/controllers/shopeeController"
+	"github.com/rals/dearme-channel/controllers/teleController"
+	"github.com/rals/dearme-channel/controllers/testController"
+	"github.com/rals/dearme-channel/controllers/tiktokController"
+	"github.com/rals/dearme-channel/controllers/tokpedController"
+	"github.com/rals/dearme-channel/controllers/zaloraController"
+
+	"github.com/rals/dearme-channel/middleware"
+
+	logs "github.com/rals/dearme-channel/logger"
+)
+
+type routes struct {
+	router *gin.Engine
+}
+
+func Logger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		t := time.Now()
+
+		c.Set("example", "12345")
+		c.Next()
+
+		latency := time.Since(t)
+		log.Print(latency)
+
+		status := c.Writer.Status()
+		log.Println(status)
+	}
+}
+
+func (r routes) Run(addr ...string) error {
+	return r.router.Run()
+}
+
+// https://github1s.com/victorsteven/food-app-server/blob/HEAD/interfaces/login_handler.go#L86-L152
+func InitializeRoute() routes {
+	gin.SetMode(gin.ReleaseMode) //set production
+	r := routes{
+		router: gin.Default(),
+	}
+
+	r.router.Use(Logger())
+	r.router.Use(gin.Recovery())
+	r.router.Use(middleware.CORSMiddleware())
+
+	g := r.router.Group("/api/v1")
+
+	r.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello, welcome to Web Services Channel Dearme RAMAYANA!")
+	})
+
+	g.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello, welcome to Web Services Channel Dearme RAMAYANA Version 1.0!")
+	})
+
+	g.POST("/login", authController.Login)
+
+	r.addPing(g)
+
+	r.exampleTest(g)
+
+	r.shopee(g)
+	r.tokped(g)
+	r.zalora(g)
+	r.bukalapak(g)
+	r.blibli(g)
+	r.tiktok(g)
+	r.jdid(g)
+	r.lazada(g)
+
+	app_port := os.Getenv("API_PORT")
+	if app_port == "" {
+		app_port = "8888"
+	}
+	//app_port = "8080"
+	log.Fatal(r.router.Run(":" + app_port))
+
+	//log.Fatal(r.router.RunTLS(":"+app_port, "C:/xampp/htdocs/wms-api.ramayana.co.id/test.pem", "C:/xampp/htdocs/wms-api.ramayana.co.id/test.key"))
+
+	return r
+}
+
+func (r routes) addPing(rg *gin.RouterGroup) {
+	ping := rg.Group("/ping")
+
+	logs.GeneralLogger.Println("Scan Modul Ping1......")
+	ping.GET("/pong1", middleware.AuthMiddleware(), middleware.MaxSizeAllowed(8192000), pong1Function)
+	logs.GeneralLogger.Println("Scan Modul Ping2......")
+	ping.GET("/pong2", middleware.AuthMiddleware(), middleware.MaxSizeAllowed(8192000), pong2Function)
+}
+
+func (r routes) exampleTest(rg *gin.RouterGroup) {
+	ping := rg.Group("/example")
+
+	logs.GeneralLogger.Println("Scan Modul BodyJson......")
+	// ping.POST("/body-json", middleware.AuthMiddleware(), middleware.MaxSizeAllowed(8192000), testController.BodyJson)
+	ping.POST("/body-json", testController.BodyJson)
+	ping.GET("/getDataRestFull", testController.GetDataRestFull)
+	ping.GET("/getDataRestFullById/:byId", testController.GetDataRestFullById)
+	ping.POST("/postDataRestFull", testController.PostDataRestFull)
+	ping.PUT("/putDataRestFull", testController.PutDataRestFull)
+	ping.GET("/webHookHandler", teleController.WebHookHandler)
+	ping.GET("/GetToken", testController.GetToken)
+	ping.GET("/RefreshToken", testController.RefreshToken)
+}
+
+func pong1Function(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong1",
+	})
+}
+
+func pong2Function(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong2",
+	})
+}
+
+func (r routes) shopee(rg *gin.RouterGroup) {
+	ping := rg.Group("/shopee")
+
+	ping.GET("/getData", shopeeController.GetData)
+	ping.GET("/getToken", shopeeController.GetToken)
+	ping.GET("/refreshToken", shopeeController.RefreshTokenAuto)
+	ping.GET("/getOrder/:status", shopeeController.GetOrder)
+	ping.GET("/getOrderDetail/:noorder", shopeeController.GetOrderDetail)
+	ping.GET("/getOrderDetailView/:noorder/:view", shopeeController.GetOrderDetailView)
+
+	ping.GET("/getDiscountiew/:idpromo", shopeeController.GetDiscountView)
+	ping.GET("/getDetailShip/:noorder", shopeeController.DetailShipping)
+	ping.GET("/CancelOrder/:noorder", shopeeController.CancelOrder)
+	ping.GET("/GetResi", shopeeController.GetNoResi)
+	ping.GET("/GetItemList", shopeeController.GetItemList)
+	ping.GET("/GetItemListBase/:itemid", shopeeController.GetItemListBase)
+	ping.GET("/StatusCompleted", shopeeController.StatusCompleted)
+
+	ping.GET("/GetItemListLimit", shopeeController.GetItemListLimit)
+	ping.GET("/UpdateStatusMapping", shopeeController.CekStatusProductNull)
+	ping.GET("/GetModelListItem/:itemid", shopeeController.GetModelItem)
+	ping.GET("/StockUpdateModelItem/:itemid/:modelid/:stock/:sku", shopeeController.StockUpdateModelItem)
+	ping.GET("/UpdateStockAuto", shopeeController.UpdateStockOtomatis)
+	ping.GET("/GetProductBySKU/:sku", shopeeController.GetProductBySKU)
+
+	ping.GET("/GetShippingParame/:noorder", shopeeController.GetShippingParam)
+	ping.GET("/GetShippingResi/:noorder", shopeeController.GetShippingResi)
+	ping.GET("/GetLogisticChannel", shopeeController.GetLogisticChannel)
+	ping.GET("/GetTrackResi/:noorder", shopeeController.TrackingResi)
+
+	ping.GET("/GetDetailPayment/:noorder", shopeeController.GetDetailPaymentOrderId)
+	ping.GET("/GetOrdersSalesShopee/:noorder", shopeeController.OrderSalesShopee)
+	ping.GET("/GetOrdersDetailShopee/:noorder", shopeeController.GetOrderDetailV2)
+	ping.GET("/GetPaymentSalesShopee/:noorder", shopeeController.PaymentSalesShopee)
+
+	ping.GET("/GetEscrowShopee/:noorder", shopeeController.GetDetailPaymentShopee)
+
+	ping.POST("/UploadImages", shopeeController.UploadImageShopee)
+	ping.GET("/UpdateSkuChannel/:sku", shopeeController.UpdateSkuAllChannel)
+	ping.GET("/GetShipDocument", middleware.AuthMiddleware(), shopeeController.GetShipDocument)
+
+}
+
+func (r routes) zalora(rg *gin.RouterGroup) {
+	ping := rg.Group("/zalora")
+
+	ping.GET("/reqToken", zaloraController.ReqToken)
+	ping.GET("/GetOrdersV2/:status", zaloraController.GetOrdersV2)
+	ping.GET("/GetOrdersDetail/:orderid", zaloraController.GetOrderDetailV2)
+	ping.GET("/GetOrdersDetailV2/:orderid", zaloraController.GetOrderDetailV2)
+	ping.GET("/GetProductsV2/:status", zaloraController.GetProductsV2)
+	ping.GET("/UpdateStatusZaloraV2/:status/:noorder", zaloraController.UpdateStatusZaloraV2)
+	ping.GET("/GetResi/:noorder", zaloraController.GetResiZaloraV2)
+	ping.GET("/UpdateStockProductV2/:productid/:stock/:sku", zaloraController.UpdateStockProductV2)
+	ping.GET("/GetProductStockV2/:productid", zaloraController.GetProductStockV2)
+	ping.GET("/GetProductbySKUV2/:sku/:status", zaloraController.GetProductBySKUV2)
+
+	ping.GET("/GetDocumentZaloraV2/:noorder", zaloraController.GetDocumentV2Zalora)
+
+	ping.GET("/TestApi", zaloraController.TestApi)
+	ping.GET("/GetOrders/:status", zaloraController.GetOrders)
+	ping.GET("/GetOrdersAuto/:status", zaloraController.GetOrdersAuto)
+	//ping.GET("/GetOrdersDetail/:noorder", zaloraController.GetOrderDetail)
+	ping.GET("/GetDetailItems/:noorder", zaloraController.GetOrderItemsDetail)
+	//ping.GET("/GetResi/:noorder", zaloraController.GetResiZalora)
+
+	ping.GET("/GetProducts", zaloraController.GetProductsV2)
+	ping.GET("/GetProductStock/:sku", zaloraController.GetProductStock)
+	ping.GET("/UpdateStockProduct/:sku/:stock", zaloraController.UpdateStockProduct)
+	ping.GET("/UpdateOtomatisStockZalora", zaloraController.UpdateOtomatisStockZalora)
+	ping.POST("/BatchUpdateStock", middleware.AuthMiddleware(), zaloraController.BatchUpdateStockZalora)
+
+	ping.GET("/UpdateStatusZalora/:status/:noorder", zaloraController.UpdateStatusZaloraV2)
+
+	ping.GET("/ReqPickupZalora/:noorder", zaloraController.ReqPickupZalora)
+	ping.GET("/GetShipmentProvidersZalora", zaloraController.GetShipmentProviders)
+	ping.GET("/GetDocumentShip/:noorder", zaloraController.GetDocumentShip)
+
+}
+
+func (r routes) bukalapak(rg *gin.RouterGroup) {
+	ping := rg.Group("/bukalapak")
+	ping.GET("/reqToken", bukalapakController.ReqToken)
+	ping.GET("/saveToken", bukalapakController.SaveToken)
+	ping.GET("/refreshToken", bukalapakController.RefreshToken)
+	ping.GET("/saveTokenAuthorize", bukalapakController.SaveToken)
+
+	ping.GET("/getProducts", bukalapakController.GetProducts)
+	ping.GET("/getProductsV2/:storeid", bukalapakController.GetProductsV2)
+	ping.GET("/getProductDetail/:id", bukalapakController.GetProductDetail)
+	ping.GET("/getProductDetailBySku/:id/:skuid", bukalapakController.GetProductDetailBySku)
+	ping.GET("/UpdateStock/:id/:skuid/:stock", bukalapakController.UpdateStock)
+	ping.GET("/UpdateAllStock", bukalapakController.UpdateAllStockBukalapak)
+
+	ping.GET("/GetOrders/:status", bukalapakController.GetOrders)
+	ping.GET("/GetOrderDetail/:orderid", bukalapakController.GetOrderDetail)
+	ping.GET("/UpdateOrder/:orderid/:status", bukalapakController.UpdateStatusOrder)
+	ping.GET("/ReqShip/:orderid/:type", bukalapakController.ReqPicking)
+	ping.GET("/GetResi/:orderid", bukalapakController.GetOrderResi)
+
+	ping.GET("/detailStore", bukalapakController.DetailStore)
+	ping.GET("/detailkurir", bukalapakController.GetDetailKurir)
+
+}
+
+func (r routes) blibli(rg *gin.RouterGroup) {
+	ping := rg.Group("/blibli")
+	ping.GET("/getsip", blibliController.GetIP)
+	ping.GET("/getProducts", blibliController.GetProductBlibli)
+	ping.GET("/getOrdersBlibli/:status", blibliController.GetOrderBlibli)
+	ping.GET("/GetOrdersDetail/:noorder", blibliController.GetOrderDetail)
+	ping.GET("/GetOrderDetailAirwayBill/:noorder", blibliController.GetOrderDetailAirwayBill)
+
+	ping.GET("/CombineOrderBlibli/:noorder", blibliController.OrderCombineBlibli)
+	ping.GET("/CreatePackageOrderBlibli/:noorder", blibliController.CreatePackageBlibli)
+	ping.GET("/ReqPickingBlibli/:package", blibliController.ReqShippingBlibliTest)
+
+	ping.GET("/GetProductBlibliDetail/:skublibli", blibliController.GetProductBlibliDetail)
+	ping.GET("/GetProductBlibliDetailV2/:skublibli", blibliController.GetProductBlibliDetailV2)
+
+	ping.GET("/StockUpdate/:skublibli/:stock", blibliController.UpdateStockBlibli)
+
+}
+
+func (r routes) jdid(rg *gin.RouterGroup) {
+	ping := rg.Group("/jdid")
+	ping.GET("/ReqToken", jdidController.ReqToken)
+	ping.GET("/getCode", jdidController.GetToken)
+	ping.GET("/infoSeller", jdidController.GetSellerInfo)
+
+	ping.GET("/refershTokenz", jdidController.RefreshToken)
+	ping.GET("/getProduct", jdidController.GetProducts)
+	ping.GET("/getProductid/:code", jdidController.GetProductByID)
+	ping.GET("/cekStock/:skuid", jdidController.CekStockJdID)
+
+	ping.GET("/UpdateStock/:skuid/:stock", jdidController.UpdateStockJdID)
+	ping.GET("/UpdateSkus/:code/:skuid/:skuwms", jdidController.UpdateSkuInfo)
+	ping.GET("/UpdateAllStock", jdidController.UpdateAllStockJDID)
+
+	ping.GET("/GetOrders/:status", jdidController.GetOrders)
+	ping.GET("/GetDetailOrders/:orderid", jdidController.GetOrderDetail)
+
+	ping.GET("/PrintDocShip/:orderid", jdidController.PrintShipping)
+	ping.GET("/ReqShipping/:orderid", jdidController.ReqShippingJdId)
+	ping.GET("/CekResi/:orderid", jdidController.GetResi)
+
+	//ping.GET("/SaveToken", jdidController.SaveToken)
+}
+func (r routes) tokped(rg *gin.RouterGroup) {
+	ping := rg.Group("/tokped")
+	ping.GET("/getTokenTokped", tokpedController.GetTokenTokped)
+	ping.GET("/GetShopInfo", tokpedController.GetShopInfo)
+	ping.GET("/GetProducts", tokpedController.GetProducts)
+	ping.GET("/GetProductsV2", tokpedController.GetProductsV2)
+	ping.GET("/GetProductsV3", tokpedController.GetProductsV3)
+	ping.GET("/GetProductsBySku", tokpedController.GetProductsBySku)
+	ping.GET("/GetProductsByUrl", tokpedController.GetProductsByUrl)
+	ping.GET("/GetProductBySKuWMS", tokpedController.GetAllSkuWms)
+	ping.GET("/GetProductBySKuWMSV2", tokpedController.GetProductsBySkuALL)
+
+	ping.GET("/GetProductDetail/:id", tokpedController.GetProductDetail)
+	ping.GET("/UpdateStock/:id/:stock/:sku", tokpedController.UpdateStock)
+	ping.GET("/UpdateStockDecre/:id/:stock/:sku/:stockold", tokpedController.UpdateStockDecre)
+
+	ping.GET("/UpdateAllStock", tokpedController.UpdateAllStockTokped)
+
+	ping.GET("/GetOrders/:status", tokpedController.GetOrders)
+	ping.GET("/GetOrderDetail/:orderid", tokpedController.GetOrderDetail)
+	ping.GET("/GetOrderDetailByInvoice/:invoicenum", tokpedController.GetOrderDetailByInvoice)
+	ping.GET("/AcceptOrder/:orderid", tokpedController.AcceptOrder)
+	ping.GET("/GetLabelShipping/:orderid", tokpedController.GetLabelShipping)
+	ping.GET("/ReqShipping/:orderid", tokpedController.ReqShip)
+	ping.GET("/GetOnlineBooking/:orderid", tokpedController.GetOnlineBooking)
+	ping.GET("/GetResi/:orderid", tokpedController.GetResi)
+
+	ping.GET("/GetOrderIdByInvoice", tokpedController.GetOrderidByInvoice)
+
+}
+func (r routes) lazada(rg *gin.RouterGroup) {
+	ping := rg.Group("/lazada")
+	ping.GET("/reqToken", lazadaController.GetTokenLazada)
+	ping.GET("/saveToken", lazadaController.SaveTokenLazada)
+	ping.GET("/refrshToken", lazadaController.RefreshToken)
+
+	ping.GET("/GetProducts", lazadaController.GetProducts)
+	ping.GET("/GetProductDetail/:itemid", lazadaController.GetProductDetail)
+	ping.GET("/GetProductDetailSKu/:sku", lazadaController.GetProductDetailSku)
+
+	ping.GET("/GetOrder/:status", lazadaController.GetOrder)
+	ping.GET("/GetOrderDetail/:orderid", lazadaController.GetOrderDetail)
+	ping.GET("/GetOrderDetailItem/:orderid/:status", lazadaController.GetOrderDetailItem)
+	//ping.GET("/SetStatusPacked/:orderid", lazadaController.GetPackedStatus)
+	ping.GET("/GetResi/:orderid", lazadaController.GetResi)
+	ping.GET("/GetDocShip/:orderid", lazadaController.GetDocumentShip)
+
+	ping.GET("/UpdateStock/:itemid/:skuid/:qty/:sku", lazadaController.UpdateStock)
+	ping.GET("/UpdateAllStock", lazadaController.UpdateAllStockLazada)
+
+	ping.GET("/GetTransactionDetails", lazadaController.GetTransactionDetails)
+
+}
+
+func (r routes) tiktok(rg *gin.RouterGroup) {
+	ping := rg.Group("/tiktok")
+	ping.GET("/CallBack", tiktokController.Callback)
+	ping.GET("/UrlLoginTiktok", tiktokController.UrlLoginTiktok)
+	ping.GET("/GetShopId", tiktokController.GetAuthorizeShopTiktok)
+	ping.GET("/RefreshTokens", tiktokController.RefreshTokenTiktok)
+
+	ping.GET("/getOrders/:status", tiktokController.GetOrdersTiktok)
+	ping.GET("/getOrderDetail/:orderid", tiktokController.GetOrderDetailTiktok)
+
+	ping.GET("/getProductsTiktok", tiktokController.GetProductsTiktok)
+	ping.GET("/getProductDetailTiktok/:product_id", tiktokController.GetProductDetailTiktok)
+	ping.GET("/UpdateStockTiktok/:product_id/:sku_id/:stock", tiktokController.UpdateStockTiktok)
+
+	ping.GET("/ReqShipping/:order_id", tiktokController.ReqShippingTiktok)
+	ping.GET("/GetResiTiktok/:order_id", tiktokController.GetResiTiktok)
+	ping.GET("/GetTracking/:order_id", tiktokController.GetTrackingNoTiktok)
+	ping.GET("/GetDocumnetShipTiktok/:order_id", tiktokController.GetDocumnetShipTiktok)
+
+}
